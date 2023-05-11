@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.schema.Greeting;
+import com.example.demo.model.Greeting;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.atomic.AtomicLong;

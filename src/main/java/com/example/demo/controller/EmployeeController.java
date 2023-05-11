@@ -1,12 +1,10 @@
 package com.example.demo.controller;
 
-import com.example.demo.exception.DuplicateEmployeeException;
-import com.example.demo.schema.Employee;
-import com.example.demo.schema.EmployeeWithId;
+import java.util.ArrayList;
+
+import com.example.demo.model.Employee;
 import com.example.demo.service.EmployeeService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -27,36 +25,45 @@ public class EmployeeController {
     }
 
     @GetMapping("/get")
-    public EmployeeWithId[] getEmployees() {
-        return this.service.getEmployees().toArray(new EmployeeWithId[0]);
+    public Employee[] getEmployees() {
+        return this.service.getEmployees().toArray(new Employee[0]);
     }
+
+//    @GetMapping("/names")
+//    public ArrayList<String> getDistinctEmployeeFirstNames() {
+//        ArrayList<String> result = new ArrayList<>();
+//        this.service.findEmployeesWithDistinctFirstName().forEach(v -> result.add(v.getFirstName()));
+//
+//        return result;
+//    }
 
     /**
      * @RequestBody maps the HttpRequest body to a transfer or domain object and deserializes the body into
      * a POJO (Plain Old Java Object).
      */
     @PostMapping(
-            value="/post",
+            value="/register",
             consumes = {MediaType.APPLICATION_JSON_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE}
     )
-    public ResponseEntity<EmployeeWithId> postEmployee(@RequestBody Employee employee) {
-        EmployeeWithId result;
-
-        try {
-            result = service.addEmployee(employee);
-        } catch (DuplicateEmployeeException e) {
-            return ResponseEntity.badRequest().body(
-                    new EmployeeWithId(-1, "", "")
-            );
-        }
-
-        /**
-         * Using ResponseEntity here allows us to control the header and status of the http response
-         */
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(result);
+    public Employee registerEmployee(@RequestBody Employee employee) {
+        return service.saveEmployee(employee);
     }
+
+    @PutMapping(
+            value="/addEligibilityAfter/{age}"
+    )
+    public void addEligibilityAfterAge(@PathVariable Integer age) {
+        service.addEligibilityAfterAge(age);
+    }
+
+    @PutMapping(
+            value="/setEligibilityBetween/{begin}/{end}/{eligible}"
+    )
+    public void setEligibilityBetweenAge(@PathVariable Integer begin, Integer end, boolean eligible) {
+        service.setEligibilityBetweenAge(eligible, begin, end);
+    }
+
 }
 
 

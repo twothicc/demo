@@ -1,6 +1,6 @@
 package com.example.demo.exception;
 
-import com.example.demo.schema.Employee;
+import com.example.demo.model.Employee;
 
 public class DuplicateEmployeeException extends Exception {
     private static final String template = "%s %s is a duplicate name";

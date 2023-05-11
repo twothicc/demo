@@ -1,7 +1,9 @@
 package com.example.demo.controller;
 
-import com.example.demo.schema.Employee;
-import com.example.demo.schema.EmployeeWithId;
+import com.example.demo.model.Employee;
+import com.example.demo.repository.EmployeeRepository;
+
+import org.junit.After;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.Random;
 
 /**
  * EmployeeControllerTest shows how to perform tests by starting the server.
@@ -32,13 +36,21 @@ class EmployeeControllerTest {
     private EmployeeController employeeController;
 
     @Autowired
+    private EmployeeRepository repository;
+
+    @Autowired
     private TestRestTemplate restTemplate;
 
-    ResponseEntity<EmployeeWithId> postEmployee(Employee employee) {
+    ResponseEntity<Employee> postEmployee(Employee employee) {
         HttpEntity<Employee> request = new HttpEntity<>(employee);
 
         return this.restTemplate.postForEntity(
-                String.format(urlTemplate, port, "post"), request, EmployeeWithId.class);
+                String.format(urlTemplate, port, "register"), request, Employee.class);
+    }
+
+    @After
+    public void resetEmployeeesTable() {
+        repository.deleteAll();
     }
 
     /**
@@ -53,59 +65,45 @@ class EmployeeControllerTest {
     void getEmployees_EmptyDatabaseEmptyEmployees() {
         assertEquals(0,
                 restTemplate.getForObject(String.format(urlTemplate, port, "get"),
-                        EmployeeWithId[].class).length
+                        Employee[].class).length
         );
     }
 
     @Test
-    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void getEmployees_NonEmptyDatabaseNonEmptyEmployees() {
+        Random rand = new Random();
+
         for (int i = 0; i < 5; i++) {
-            Employee employee = new Employee("John", String.valueOf(i));
-            ResponseEntity<EmployeeWithId> result = postEmployee(employee);
+            Employee employee = new Employee("John", String.valueOf(i),
+                    rand.nextInt(0, 100), false);
+            ResponseEntity<Employee> result = postEmployee(employee);
 
             assertEquals(result.getStatusCode(), HttpStatus.OK);
         }
 
-        EmployeeWithId[] result = restTemplate.getForObject(
+        Employee[] result = restTemplate.getForObject(
                 String.format(urlTemplate, port, "get"),
-                EmployeeWithId[].class
+                Employee[].class
         );
 
         assertEquals(5, result.length);
         for (int i = 0; i < 5; i++) {
-            EmployeeWithId curr = result[i];
+            Employee curr = result[i];
 
-            assertEquals(i + 1, curr.getId());
             assertEquals("John", curr.getFirstName());
             assertEquals(String.valueOf(i), curr.getLastName());
         }
     }
 
     @Test
-    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void postEmployee_addSingleEmployeeSingleEmployeeAdded() {
-        Employee employee = new Employee("John", "Wick");
-        ResponseEntity<EmployeeWithId> result = postEmployee(employee);
+        Employee employee = new Employee("John", "Wick", 55, false);
+        ResponseEntity<Employee> result = postEmployee(employee);
 
-        EmployeeWithId resultBody = result.getBody();
+        Employee resultBody = result.getBody();
 
         assertNotNull(resultBody);
-        assertEquals(1, resultBody.getId());
         assertEquals("John", resultBody.getFirstName());
         assertEquals("Wick", resultBody.getLastName());
-    }
-
-    @Test
-    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-    void postEmployee_addEmployeeWithDuplicateNameBadRequest() {
-        Employee employee = new Employee("John", "Wick");
-        ResponseEntity<EmployeeWithId> result1 = postEmployee(employee);
-
-        assertEquals(HttpStatus.OK, result1.getStatusCode());
-
-        ResponseEntity<EmployeeWithId> result2 = postEmployee(employee);
-        assertEquals(HttpStatus.BAD_REQUEST, result2.getStatusCode());
-        assertEquals(new EmployeeWithId(-1, "", ""), result2.getBody());
     }
 }

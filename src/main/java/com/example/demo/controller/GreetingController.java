@@ -1,6 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.schema.Greeting;
+import com.example.demo.model.Greeting;
 import com.example.demo.service.GreetingService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

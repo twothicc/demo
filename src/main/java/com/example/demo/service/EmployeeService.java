@@ -1,9 +1,9 @@
 package com.example.demo.service;
 
-import com.example.demo.database.DB;
-import com.example.demo.exception.DuplicateEmployeeException;
-import com.example.demo.schema.Employee;
-import com.example.demo.schema.EmployeeWithId;
+import com.example.demo.repository.EmployeeRepository;
+import com.example.demo.model.Employee;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -16,16 +16,44 @@ import java.util.ArrayList;
  */
 @Service
 public class EmployeeService {
-    private final DB db = new DB();
 
-    public EmployeeWithId addEmployee(Employee employee) throws DuplicateEmployeeException {
-        long id = this.db.addEmployee(employee);
 
-        return new EmployeeWithId(id, employee.getFirstName(), employee.getLastName());
+    @Autowired
+    private EmployeeRepository repository;
+
+    public Employee saveEmployee(Employee employee) {
+        return this.repository.save(employee);
     }
 
-    public ArrayList<EmployeeWithId> getEmployees() {
-        return this.db.getEmployees();
+    public ArrayList<Employee> getEmployees() {
+        System.out.println("yolo");
+        System.out.println(this.repository.findAll());
+        System.out.println("yolo");
+        return new ArrayList<>(this.repository.findAll());
+    }
+
+//    public ArrayList<Employee> findEmployeesWithDistinctFirstName() {
+//        return new ArrayList<>(this.repository.findDistinctFirstName());
+//    }
+
+    public void addEligibilityAfterAge(Integer age) {
+        ArrayList<Employee> records = new ArrayList<>(
+                this.repository.findByAgeAfterOrderByAgeAsc(age)
+        );
+
+        for (Employee curr : records) {
+            this.repository.updateEmployeeEligibility(curr.getId(), true);
+        }
+    }
+
+    public void setEligibilityBetweenAge(boolean isEligible, Integer startAge, Integer endAge) {
+        ArrayList<Employee> records = new ArrayList<>(
+                this.repository.findByAgeBetweenOrderByAgeAsc(startAge, endAge)
+        );
+
+        for (Employee curr : records) {
+            this.repository.updateEmployeeEligibility(curr.getId(), isEligible);
+        }
     }
 }
 
