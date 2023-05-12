@@ -1,12 +1,16 @@
 package com.example.demo.service;
 
+import com.example.demo.exception.InvalidEmployeeAgeException;
 import com.example.demo.repository.EmployeeRepository;
 import com.example.demo.model.Employee;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @Service marks a class as a service layer component.
@@ -21,38 +25,44 @@ public class EmployeeService {
     @Autowired
     private EmployeeRepository repository;
 
-    public Employee saveEmployee(Employee employee) {
+    public Employee saveEmployee(Employee employee) throws DataAccessException, InvalidEmployeeAgeException {
+        if (employee.getAge() == null || employee.getAge() < 0) {
+            throw new InvalidEmployeeAgeException(employee.getAge());
+        }
+
         return this.repository.save(employee);
     }
 
-    public ArrayList<Employee> getEmployees() {
-        System.out.println("yolo");
-        System.out.println(this.repository.findAll());
-        System.out.println("yolo");
+    public ArrayList<Employee> batchSaveEmployee(Employee[] employees) throws DataAccessException {
+        ArrayList<Employee> result = new ArrayList<>();
+        if (employees == null) {
+            return result;
+        }
+
+        List<Employee> employeesList = new ArrayList<>(Arrays.asList(employees));
+        this.repository.saveAll(employeesList).forEach(result::add);
+        return result;
+    }
+
+    public ArrayList<Employee> getEmployees() throws DataAccessException {
         return new ArrayList<>(this.repository.findAll());
     }
 
-//    public ArrayList<Employee> findEmployeesWithDistinctFirstName() {
-//        return new ArrayList<>(this.repository.findDistinctFirstName());
-//    }
+    public ArrayList<Employee> findEmployeesWithDistinctFirstName() throws DataAccessException {
+        return new ArrayList<>(this.repository.findDistinctFirstName());
+    }
 
-    public void addEligibilityAfterAge(Integer age) {
+    public long countEligible() throws DataAccessException {
+        return this.repository.countByIsEligible(true);
+    }
+
+    public void addEligibilityAfterAge(Integer age) throws DataAccessException {
         ArrayList<Employee> records = new ArrayList<>(
                 this.repository.findByAgeAfterOrderByAgeAsc(age)
         );
 
         for (Employee curr : records) {
             this.repository.updateEmployeeEligibility(curr.getId(), true);
-        }
-    }
-
-    public void setEligibilityBetweenAge(boolean isEligible, Integer startAge, Integer endAge) {
-        ArrayList<Employee> records = new ArrayList<>(
-                this.repository.findByAgeBetweenOrderByAgeAsc(startAge, endAge)
-        );
-
-        for (Employee curr : records) {
-            this.repository.updateEmployeeEligibility(curr.getId(), isEligible);
         }
     }
 }

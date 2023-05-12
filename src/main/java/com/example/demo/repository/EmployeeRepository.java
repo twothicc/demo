@@ -1,5 +1,6 @@
 package com.example.demo.repository;
 
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface EmployeeRepository extends CrudRepository<Employee, Long> {
@@ -59,7 +61,7 @@ public interface EmployeeRepository extends CrudRepository<Employee, Long> {
     // Collection<Employee> findDistinctByFirstName(String firstName);
     @Query(value = "SELECT * FROM " +
             "(SELECT *, ROW_NUMBER() OVER " +
-            "(PARTITION BY e.FirstName ORDER BY e.Id) AS Row FROM Employees e) AS a " +
+            "(PARTITION BY e.first_name ORDER BY e.id) AS Row FROM Employees e) AS a " +
             "WHERE a.Row = 1",
             nativeQuery = true
     )
@@ -69,12 +71,28 @@ public interface EmployeeRepository extends CrudRepository<Employee, Long> {
      * Chain multiple query predicate keywords together.
      * Just make sure that the parameters are ordered correctly.
      */
-    Collection<Employee> findByAgeBetweenOrderByAgeAsc(Integer startAge, Integer endAge);
     Collection<Employee> findByAgeAfterOrderByAgeAsc(Integer age);
-    long countByAgeBetween(Integer startAge, Integer endAge);
-    long countByAgeAfter(Integer age);
 
-    @Query(value = "UPDATE Employees e set e.Eligibility = ?2 WHERE e.Id = ?1", nativeQuery = true)
+    /**
+     * @Modifying annotation must be used with the @Query annotation to allow queries that aren't SELECT queries
+     * to be defined.
+     *
+     * @Transactional annotation adds default configurations for the propagation type, isolation level,
+     * timeout, readOnly flag & rollback rules for transactional management that is handled by spring context.
+     * Note that by default, rollback happens for runtime & unchecked exceptions only. DataAccessException is
+     * a runtime exception.
+     *
+     * @Query annotation when used without the nativeQuery flag set to true will reference the naming of
+     * the model's respective Java class and properties.
+     * Note that with the nativeQuery flag set to true, parameterized queries will not be possible.
+     *
+     * Also a specific update method is usually not necessary, because the saveAll and save methods perform
+     * upsert operation.
+     */
+    @Query("UPDATE Employee e SET e.isEligible = ?2 WHERE e.id = ?1")
     @Modifying
+    @Transactional(rollbackFor = SQLException.class)
     void updateEmployeeEligibility(Long id, boolean isEligible);
+
+    long countByIsEligible(boolean isEligible);
 }
