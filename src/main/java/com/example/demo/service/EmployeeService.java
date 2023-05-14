@@ -53,17 +53,29 @@ public class EmployeeService {
     }
 
     public long countEligible() throws DataAccessException {
-        return this.repository.countByIsEligible(true);
+        return this.repository.countByEligibility(true);
     }
 
     public void addEligibilityAfterAge(Integer age) throws DataAccessException {
         ArrayList<Employee> records = new ArrayList<>(
-                this.repository.findByAgeAfterOrderByAgeAsc(age)
+                this.repository.findByEligibilityAndAgeAfterOrderByAgeAsc(false, age)
         );
 
         for (Employee curr : records) {
             this.repository.updateEmployeeEligibility(curr.getId(), true);
         }
+    }
+
+    public void batchAddEligibilityAfterAge(Integer age) throws DataAccessException {
+        ArrayList<Employee> records = new ArrayList<>(
+                this.repository.findByEligibilityAndAgeAfterOrderByAgeAsc(false, age)
+        );
+
+        for (Employee curr : records) {
+            curr.setEligibility(true);
+        }
+
+        this.repository.saveAll(records);
     }
 }
 

@@ -71,7 +71,7 @@ public interface EmployeeRepository extends CrudRepository<Employee, Long> {
      * Chain multiple query predicate keywords together.
      * Just make sure that the parameters are ordered correctly.
      */
-    Collection<Employee> findByAgeAfterOrderByAgeAsc(Integer age);
+    Collection<Employee> findByEligibilityAndAgeAfterOrderByAgeAsc(boolean isEligible, Integer age);
 
     /**
      * @Modifying annotation must be used with the @Query annotation to allow queries that aren't SELECT queries
@@ -89,10 +89,10 @@ public interface EmployeeRepository extends CrudRepository<Employee, Long> {
      * Also a specific update method is usually not necessary, because the saveAll and save methods perform
      * upsert operation.
      */
-    @Query("UPDATE Employee e SET e.isEligible = ?2 WHERE e.id = ?1")
+    @Query("UPDATE Employee e SET e.eligibility = ?2 WHERE e.id = ?1")
     @Modifying
     @Transactional(rollbackFor = SQLException.class)
-    void updateEmployeeEligibility(Long id, boolean isEligible);
+    void updateEmployeeEligibility(Long id, boolean eligibility);
 
-    long countByIsEligible(boolean isEligible);
+    long countByEligibility(boolean eligibility);
 }

@@ -7,10 +7,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "Employees")
+@Table(name = "Employees", indexes = @Index(name = "eligibilityAgeIndex", columnList = "eligibility, age ASC"))
 public class Employee {
 
     @Id
@@ -24,15 +25,15 @@ public class Employee {
     @Column(name = "age", nullable = false)
     private Integer age;
     @Column(name = "eligibility", nullable = false, columnDefinition = "bit")
-    private boolean isEligible;
+    private boolean eligibility;
 
     public Employee() {}
 
-    public Employee(String firstName, String lastName, Integer age, boolean isEligible) {
+    public Employee(String firstName, String lastName, Integer age, boolean eligibility) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.age = age;
-        this.isEligible = isEligible;
+        this.eligibility = eligibility;
     }
 
     public Long getId() {
@@ -51,12 +52,12 @@ public class Employee {
         return age;
     }
 
-    public boolean isEligible() {
-        return isEligible;
+    public boolean isEligibility() {
+        return eligibility;
     }
 
-    public void setEligible(boolean eligible) {
-        isEligible = eligible;
+    public void setEligibility(boolean eligibility) {
+        this.eligibility = eligibility;
     }
 
     @Override

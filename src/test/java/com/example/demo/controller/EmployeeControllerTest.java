@@ -172,7 +172,7 @@ class EmployeeControllerTest {
         assertEquals("John", responseEmployee.getFirstName());
         assertEquals("Wick", responseEmployee.getLastName());
         assertEquals(55, responseEmployee.getAge());
-        assertFalse(responseEmployee.isEligible());
+        assertFalse(responseEmployee.isEligibility());
     }
 
     @Test
@@ -192,7 +192,7 @@ class EmployeeControllerTest {
         assertEquals("John", responseEmployee.getFirstName());
         assertNull(responseEmployee.getLastName());
         assertEquals(55, responseEmployee.getAge());
-        assertFalse(responseEmployee.isEligible());
+        assertFalse(responseEmployee.isEligibility());
     }
 
     @Test
@@ -212,7 +212,7 @@ class EmployeeControllerTest {
         assertNull(responseEmployee.getFirstName());
         assertEquals("Wick", responseEmployee.getLastName());
         assertEquals(55, responseEmployee.getAge());
-        assertFalse(responseEmployee.isEligible());
+        assertFalse(responseEmployee.isEligibility());
     }
 
     @Test
@@ -232,7 +232,7 @@ class EmployeeControllerTest {
         assertEquals("John", responseEmployee.getFirstName());
         assertEquals("Wick", responseEmployee.getLastName());
         assertNull(responseEmployee.getAge());
-        assertFalse(responseEmployee.isEligible());
+        assertFalse(responseEmployee.isEligibility());
     }
 
     @Test
@@ -252,7 +252,7 @@ class EmployeeControllerTest {
         assertEquals("John", responseEmployee.getFirstName());
         assertEquals("Wick", responseEmployee.getLastName());
         assertEquals(-1, responseEmployee.getAge());
-        assertFalse(responseEmployee.isEligible());
+        assertFalse(responseEmployee.isEligibility());
     }
 
     @Test
@@ -279,7 +279,7 @@ class EmployeeControllerTest {
             assertEquals("John", responseEmployee.getFirstName());
             assertEquals("Wick" + (i + 1), responseEmployee.getLastName());
             assertEquals(55, responseEmployee.getAge());
-            assertFalse(responseEmployee.isEligible());
+            assertFalse(responseEmployee.isEligibility());
         }
     }
 
@@ -387,7 +387,7 @@ class EmployeeControllerTest {
      */
     @Test
     void addEligibilityAfterAge_SetEligibilityToTrueAfterHalf_Ok() {
-        int size = 50;
+        int size = 1000;
         Employee[] employees = new Employee[size];
         for (int i = 0; i < size; i++) {
             String name = i < size/2 ? "John" : "Born";
@@ -451,5 +451,39 @@ class EmployeeControllerTest {
                 String.format(urlTemplate, port, "count/eligible"), CountEligibleResponse.class);
         assertNotNull(countEligibleResponse);
         assertEquals(0, countEligibleResponse.getCount());
+    }
+
+    @Test
+    void batchAddEligibilityAfterAge_SetEligibilityToTrueAfterHalf_Ok() {
+        int size = 1000;
+        Employee[] employees = new Employee[size];
+        for (int i = 0; i < size; i++) {
+            String name = i < size/2 ? "John" : "Born";
+            employees[i] = new Employee(name, "Wick" + i, i, false);
+        }
+
+        ResponseEntity<EmployeesResponse> batchSaveResponse = batchRegisterEmployee(employees);
+
+        assertEquals(HttpStatus.OK, batchSaveResponse.getStatusCode());
+
+        ResponseEntity<EligibilityAfterResponse> response = restTemplate.exchange(
+                String.format(urlTemplate, port, "/batch/addEligibilityAfter/" + (size/2 - 1)),
+                HttpMethod.PUT,
+                null,
+                EligibilityAfterResponse.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        EligibilityAfterResponse responseBody = response.getBody();
+        assertNotNull(responseBody);
+        assertEquals(EmployeeResponseMessage.SET_ELIGIBILITY_AFTER_SUCCESS, responseBody.getMsg());
+        assertEquals(size/2 - 1, responseBody.getAfterAge());
+        assertTrue(responseBody.getEligibilitySet());
+
+        CountEligibleResponse countEligibleResponse = restTemplate.getForObject(
+                String.format(urlTemplate, port, "count/eligible"), CountEligibleResponse.class);
+        assertNotNull(countEligibleResponse);
+        assertEquals(size/2, countEligibleResponse.getCount());
     }
 }

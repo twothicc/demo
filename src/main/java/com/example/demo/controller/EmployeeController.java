@@ -140,6 +140,24 @@ public class EmployeeController {
             return ResponseEntity.internalServerError().body(response);
         }
     }
+
+    @PutMapping(
+            value="/batch/addEligibilityAfter/{age}",
+            produces = {MediaType.APPLICATION_JSON_VALUE}
+    )
+    public ResponseEntity<EligibilityAfterResponse> batchAddEligibilityAfterAge(@PathVariable Integer age) {
+        try {
+            service.batchAddEligibilityAfterAge(age);
+            EligibilityAfterResponse response = new EligibilityAfterResponse(age, true,
+                    EmployeeResponseMessage.SET_ELIGIBILITY_AFTER_SUCCESS);
+            return ResponseEntity.ok(response);
+        } catch (DataAccessException dae) {
+            dae.printStackTrace();
+            EligibilityAfterResponse response = new EligibilityAfterResponse(age, true,
+                    EmployeeResponseMessage.SET_ELIGIBILITY_AFTER_ERROR);
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
 }
 
 

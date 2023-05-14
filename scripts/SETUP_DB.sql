@@ -15,6 +15,10 @@ IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Employees' and xtype='U')
 	)
 GO
 
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'ageIndex')
+    CREATE INDEX eligibilityAgeIndex ON Employees (eligibility, age ASC);
+GO
+
 -- Checks if login demoUser already exists for this mssql instance
 IF NOT EXISTS (SELECT name FROM master.sys.server_principals WHERE name='demoUser')
 	CREATE LOGIN demoUser WITH PASSWORD = 'demo_pass';
