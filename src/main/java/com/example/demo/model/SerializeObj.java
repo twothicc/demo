@@ -22,31 +22,21 @@ public class SerializeObj {
 
     public SerializeObj(String content, SerializedObj2 obj) {
         this.content = content;
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream out = null;
-        try {
-            out = new ObjectOutputStream(bos);
-            out.writeObject(obj);
-            this.serializedContent = bos.toByteArray();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                bos.close();
-            } catch (IOException ex) {
-                // ignore close exception
-            }
-        }
+        this.serializedContent = serializeContent(obj);
     }
 
     public SerializeObj(String content, SerializedObj obj) {
         this.content = content;
+        this.serializedContent = serializeContent(obj);
+    }
+
+    private byte[] serializeContent(Object obj) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream out = null;
         try {
             out = new ObjectOutputStream(bos);
             out.writeObject(obj);
-            this.serializedContent = bos.toByteArray();
+            return bos.toByteArray();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -56,6 +46,19 @@ public class SerializeObj {
                 // ignore close exception
             }
         }
+        return new byte[0];
+    }
+
+    private Object deserializeContent() {
+        ByteArrayInputStream bis = new ByteArrayInputStream(serializedContent);
+        try (ObjectInput in = new ObjectInputStream(bis)) {
+
+            return in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        // ignore close exception
+        return null;
     }
 
     public int getId() {
@@ -71,28 +74,10 @@ public class SerializeObj {
     }
 
     public SerializedObj2 getSerializedObj2() {
-        ByteArrayInputStream bis = new ByteArrayInputStream(serializedContent);
-        try (ObjectInput in = new ObjectInputStream(bis)) {
-            Object o = in.readObject();
-
-            return (SerializedObj2) o;
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        // ignore close exception
-        return null;
+        return (SerializedObj2) deserializeContent();
     }
 
     public SerializedObj getSerializedObj() {
-        ByteArrayInputStream bis = new ByteArrayInputStream(serializedContent);
-        try (ObjectInput in = new ObjectInputStream(bis)) {
-            Object o = in.readObject();
-
-            return (SerializedObj) o;
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        // ignore close exception
-        return null;
+        return (SerializedObj) deserializeContent();
     }
 }
