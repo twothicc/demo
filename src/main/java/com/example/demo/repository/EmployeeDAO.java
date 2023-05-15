@@ -8,6 +8,7 @@ import java.util.function.Function;
 
 import com.example.demo.model.Employee;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,13 @@ public class EmployeeDAO implements EmployeeMasterRepository, EmployeeSlaveRepos
 
     private EmployeeMasterRepository masterRepository;
     private EmployeeSlaveRepository slaveRepository;
+
+    @Autowired
+    public EmployeeDAO(EmployeeMasterRepository employeeMasterRepository,
+                       EmployeeSlaveRepository employeeSlaveRepository) {
+        this.masterRepository = employeeMasterRepository;
+        this.slaveRepository = employeeSlaveRepository;
+    }
 
     @Override
     public <S extends Employee> S save(S entity) {
@@ -164,6 +172,10 @@ public class EmployeeDAO implements EmployeeMasterRepository, EmployeeSlaveRepos
     @Override
     public <S extends Employee> List<S> saveAll(Iterable<S> entities) {
         return slaveRepository.saveAll(entities);
+    }
+
+    public Optional<Employee> findByIdInMaster(Long aLong) {
+        return masterRepository.findById(aLong);
     }
 
     @Override

@@ -8,6 +8,7 @@ import javax.sql.DataSource;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -56,7 +57,7 @@ public class MasterDataSourceConfig {
     public MasterDataSourceConfig(@Value("${spring.datasource.url}") String url,
                                   @Value("${spring.datasource.username}") String username,
                                   @Value("${spring.datasource.password}") String password,
-                                  @Value("${com.microsoft.sqlserver.jdbc.SQLServerDriver}") String driverClassName,
+                                  @Value("${spring.datasource.driver-class-name}") String driverClassName,
                                   @Value("${spring.jpa.show-sql}") Boolean showSQL,
                                   @Value("${spring.jpa.properties.hibernate.format_sql}") Boolean formatSQL,
                                   @Value("${spring.datasource.tomcat.max-active}") Integer tomcatMaxActiveConnections,
@@ -123,7 +124,7 @@ public class MasterDataSourceConfig {
         properties.put("hibernate.format_sql", String.valueOf(formatSQL));
         LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
         factoryBean.setDataSource(masterDataSource());
-        factoryBean.setPackagesToScan("com.example.demo.repository");
+        factoryBean.setPackagesToScan("com.example.demo.model");
         factoryBean.setJpaVendorAdapter(vendorAdapter);
         factoryBean.getJpaPropertyMap().putAll(properties);
         return factoryBean;
