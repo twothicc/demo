@@ -1,19 +1,19 @@
 package com.example.demo.repository;
 
-import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Optional;
-
 import com.example.demo.model.Employee;
-
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
+
+/**
+ * EmployeeMasterRepository will connect to the master db using the MasterDataSourceConfig.
+ */
 @Repository
-public interface EmployeeRepository extends CrudRepository<Employee, Long> {
+public interface EmployeeMasterRepository extends JpaRepository<Employee, Long> {
 
     /**
      * Spring Data repository query derivation mechanism supports implementation
@@ -40,38 +40,11 @@ public interface EmployeeRepository extends CrudRepository<Employee, Long> {
      * if usage of Spring Data repository query derivation mechanism leads to wrong results.
      */
 
-    // Queries
     <S extends Employee> S save(S entity);
 
-    Optional<Employee> findById(Long id);
-    Collection<Employee> findAll();
-    long count();
     void delete(Employee entity);
 
     void deleteAll();
-
-    /**
-     * Distinct is mentioned by JPA to be problematic, so it is always better
-     * to write a declared query when you need to use distinct.
-     *
-     * For instance, "select distinct u from User u" yields different results from
-     * "select distinct u.lastname from User u" as the distinct keyword of the first query
-     * applies to the id field, which has no duplicates.
-     */
-    // Collection<Employee> findDistinctByFirstName(String firstName);
-    @Query(value = "SELECT * FROM " +
-            "(SELECT *, ROW_NUMBER() OVER " +
-            "(PARTITION BY e.first_name ORDER BY e.id) AS Row FROM Employees e) AS a " +
-            "WHERE a.Row = 1",
-            nativeQuery = true
-    )
-    Collection<Employee> findDistinctFirstName();
-
-    /**
-     * Chain multiple query predicate keywords together.
-     * Just make sure that the parameters are ordered correctly.
-     */
-    Collection<Employee> findByEligibilityAndAgeAfterOrderByAgeAsc(boolean isEligible, Integer age);
 
     /**
      * @Modifying annotation must be used with the @Query annotation to allow queries that aren't SELECT queries
@@ -93,6 +66,4 @@ public interface EmployeeRepository extends CrudRepository<Employee, Long> {
     @Modifying
     @Transactional(rollbackFor = SQLException.class)
     void updateEmployeeEligibility(Long id, boolean eligibility);
-
-    long countByEligibility(boolean eligibility);
 }

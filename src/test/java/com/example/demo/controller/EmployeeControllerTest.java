@@ -8,7 +8,7 @@ import com.example.demo.controller.response.EmployeeResponseMessage;
 import com.example.demo.controller.response.EmployeesResponse;
 import com.example.demo.exception.InvalidEmployeeAgeException;
 import com.example.demo.model.Employee;
-import com.example.demo.repository.EmployeeRepository;
+import com.example.demo.repository.EmployeeDAO;
 import com.example.demo.service.EmployeeService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +53,7 @@ class EmployeeControllerTest {
     private EmployeeController employeeController;
 
     @Autowired
-    private EmployeeRepository repository;
+    private EmployeeDAO repository;
 
     @Autowired
     private TestRestTemplate restTemplate;

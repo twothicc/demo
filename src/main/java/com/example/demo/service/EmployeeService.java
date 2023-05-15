@@ -1,7 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.exception.InvalidEmployeeAgeException;
-import com.example.demo.repository.EmployeeRepository;
+import com.example.demo.repository.EmployeeDAO;
 import com.example.demo.model.Employee;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +23,7 @@ public class EmployeeService {
 
 
     @Autowired
-    private EmployeeRepository repository;
+    private EmployeeDAO repository;
 
     public Employee saveEmployee(Employee employee) throws DataAccessException, InvalidEmployeeAgeException {
         if (employee.getAge() == null || employee.getAge() < 0) {
