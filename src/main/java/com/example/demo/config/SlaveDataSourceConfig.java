@@ -1,35 +1,33 @@
 package com.example.demo.config;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.sql.DataSource;
-
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 
+import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Follow https://medium.com/swlh/a-complete-guide-to-setting-up-multiple-datasources-in-spring-8296d4ff0935
- *
- * JDBC Connection Pool is a replacement to Apache Commons DBCP connection pool.
- * The tomcat jdbc pool is starvation proof. If the pool is empty and threads are waiting for connection, when
- * a connection is returned, the pool will awake the correct thread waiting.
+ * basePackages configures the base packages to scan for annotated components.
+ * entityManagerFactoryRef property configures the name of the EntityManagerFactory bean definition used to
+ * create repositories discovered through this annotation.
+ * includeFilters specifies which types are eligible for component scanning. In this case, we are adding our custom
+ * annotation @ReadOnlyRepository to be scanned.
  */
 @Configuration
 @EnableJpaRepositories(
         basePackages = "com.example.demo.repository",
-        excludeFilters = @ComponentScan.Filter(ReadOnlyRepository.class),
-        entityManagerFactoryRef = "masterEntityManagerFactory"
+        includeFilters = @ComponentScan.Filter(ReadOnlyRepository.class),
+        entityManagerFactoryRef = "slaveEntityManagerFactory"
 )
-public class MasterDataSourceConfig {
+public class SlaveDataSourceConfig {
 
     private String url;
     private String username;
@@ -53,7 +51,7 @@ public class MasterDataSourceConfig {
     private Boolean tomcatRemoveAbandonedConnections;
 
     @Autowired
-    public MasterDataSourceConfig(@Value("${spring.datasource.url}") String url,
+    public SlaveDataSourceConfig(@Value("${spring.datasource.url}") String url,
                                   @Value("${spring.datasource.username}") String username,
                                   @Value("${spring.datasource.password}") String password,
                                   @Value("${com.microsoft.sqlserver.jdbc.SQLServerDriver}") String driverClassName,
@@ -64,7 +62,7 @@ public class MasterDataSourceConfig {
                                   @Value("${spring.datasource.tomcat.time-between-eviction-runs-millis}") Integer tomcatTimeBetweenEvictionRunsInMillis,
                                   @Value("${spring.datasource.tomcat.min-evictable-idle-time-millis}") Integer tomcatMinTimeForEvictionEligibilityInMillis,
                                   @Value("${spring.datasource.tomcat.remove-abandoned}") Boolean tomcatRemoveAbandonedConnections
-                                  ) {
+    ) {
         this.url = url;
         this.username = username;
         this.password = password;
@@ -79,16 +77,10 @@ public class MasterDataSourceConfig {
     }
 
     /**
-     * @Primary is needed when we need to register more than one bean of the same type.
-     * In this case, we will have 2 beans that will inject the DataSource object into the Spring context, one for
-     * the master db and one for the slave db.
-     * By marking this bean with @Primary, we are telling spring to preferentially inject masterDataSource over the
-     * other. This means that when @Autowiring is used, the DataSource instance created by masterDataSource will
-     * have preference over all other instances.
+     * Notice that @Primary annotation is not used here.
      */
     @Bean
-    @Primary
-    public DataSource masterDataSource() {
+    public DataSource slaveDataSource() {
         PoolProperties poolProperties = new PoolProperties();
         poolProperties.setUrl(url);
         poolProperties.setUsername(username);
@@ -105,15 +97,8 @@ public class MasterDataSourceConfig {
         return dataSource;
     }
 
-    /**
-     * HibernateJpaVendorAdapter exposes Hibernate's persistence provider and Session as extended EntityManager
-     * interface.
-     * LocalContainerEntityManagerFactoryBean creates a JPA EntityManagerFactory according to the JPA's standard
-     * bootstrap contract. This EntityManagerFactory can then be passed to our repository via dependency injection.
-     */
     @Bean
-    @Primary
-    public LocalContainerEntityManagerFactoryBean masterEntityManagerFactory() {
+    public LocalContainerEntityManagerFactoryBean slaveEntityManagerFactory() {
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
         vendorAdapter.setGenerateDdl(false);
         Map<String, String> properties = new HashMap<>();
@@ -122,7 +107,7 @@ public class MasterDataSourceConfig {
         properties.put("hibernate.show_sql", String.valueOf(showSQL));
         properties.put("hibernate.format_sql", String.valueOf(formatSQL));
         LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
-        factoryBean.setDataSource(masterDataSource());
+        factoryBean.setDataSource(slaveDataSource());
         factoryBean.setPackagesToScan("com.example.demo.repository");
         factoryBean.setJpaVendorAdapter(vendorAdapter);
         factoryBean.getJpaPropertyMap().putAll(properties);
