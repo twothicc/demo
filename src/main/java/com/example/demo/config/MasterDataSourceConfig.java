@@ -8,7 +8,6 @@ import javax.sql.DataSource;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -112,7 +111,7 @@ public class MasterDataSourceConfig {
      * LocalContainerEntityManagerFactoryBean creates a JPA EntityManagerFactory according to the JPA's standard
      * bootstrap contract. This EntityManagerFactory can then be passed to our repository via dependency injection.
      */
-    @Bean
+    @Bean(name = "masterEntityManagerFactory")
     @Primary
     public LocalContainerEntityManagerFactoryBean masterEntityManagerFactory() {
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();

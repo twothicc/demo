@@ -29,6 +29,14 @@ public class Employee {
 
     public Employee() {}
 
+    public Employee(Long id, String firstName, String lastName, Integer age, boolean eligibility) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.age = age;
+        this.eligibility = eligibility;
+    }
+
     public Employee(String firstName, String lastName, Integer age, boolean eligibility) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -56,6 +64,18 @@ public class Employee {
         return eligibility;
     }
 
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
     public void setEligibility(boolean eligibility) {
         this.eligibility = eligibility;
     }
@@ -63,7 +83,8 @@ public class Employee {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Employee other) {
-            return Objects.equals(this.id, other.id);
+            return Objects.equals(this.id, other.id) && this.firstName.equals(other.firstName)
+                    && this.lastName.equals(other.lastName) && this.eligibility == other.eligibility;
         }
 
         return false;

@@ -7,6 +7,7 @@ import com.example.demo.model.Employee;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,6 +67,7 @@ public class EmployeeService {
         }
     }
 
+    @Transactional
     public void batchAddEligibilityAfterAge(Integer age) throws DataAccessException {
         ArrayList<Employee> records = new ArrayList<>(
                 this.repository.findByEligibilityAndAgeAfterOrderByAgeAsc(false, age)
@@ -76,6 +78,18 @@ public class EmployeeService {
         }
 
         this.repository.saveAll(records);
+    }
+
+    @Transactional
+    public void testTransaction(Employee e1) {
+        e1.setFirstName("Johnny");
+        Employee e2 = repository.save(e1);
+
+        int[] test = {1};
+        test[1] = 2;
+
+        e2.setLastName("Wang");
+        repository.save(e2);
     }
 }
 

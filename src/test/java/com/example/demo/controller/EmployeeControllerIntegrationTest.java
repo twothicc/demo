@@ -24,6 +24,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import static java.lang.Math.ceil;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -39,7 +40,7 @@ import java.util.*;
  * just without the server.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class EmployeeControllerTest {
+class EmployeeControllerIntegrationTest {
 
     private final static String urlTemplate = "http://localhost:%d/employee/%s";
 
@@ -312,33 +313,32 @@ class EmployeeControllerTest {
         assertEquals(0, responseBody.getEmployees().size());
     }
 
-//    @Test
-//    void getDistinctEmployeeFirstNames_multipleEmployeesWithSameFirstName_DistinctFirstNames() throws InvalidEmployeeAgeException {
-//        Employee employee1 = new Employee("John", "Wick", 55, false);
-//        Employee employee2 = new Employee("John", "Wick", 55, false);
-//        Employee employee3 = new Employee("John", "Wick", 55, false);
-//        Employee employee4 = new Employee("Born", "Wick", 55, false);
-//        Employee[] employees = new Employee[]{employee1, employee2, employee3, employee4};
-//
-//        ResponseEntity<EmployeesResponse> batchSaveResponse = batchRegisterEmployee(employees);
-//        assertEquals(HttpStatus.OK, batchSaveResponse.getStatusCode());
-//
-//        ResponseEntity<EmployeeNamesResponse> response = restTemplate.getForEntity(
-//                String.format(urlTemplate, port, "names"), EmployeeNamesResponse.class);
-//
-//        assertEquals(HttpStatus.OK, response.getStatusCode());
-//
-//        EmployeeNamesResponse responseBody = response.getBody();
-//        assertNotNull(responseBody);
-//        assertEquals(EmployeeResponseMessage.DISTINCT_FIRST_NAMES_SUCCESS, responseBody.getMsg());
-//
-//        ArrayList<String> firstNames = responseBody.getNames();
-//
-//        assertNotNull(firstNames);
-//        Collections.sort(firstNames);
-//        assertEquals("Born", firstNames.get(0));
-//        assertEquals("John", firstNames.get(1));
-//    }
+    @Test
+    void getDistinctEmployeeFirstNames_multipleEmployeesWithSameFirstName_DistinctFirstNames() throws InvalidEmployeeAgeException {
+        Employee employee1 = new Employee("John", "Wick", 55, false);
+        Employee employee2 = new Employee("John", "Wick", 55, false);
+        Employee employee3 = new Employee("John", "Wick", 55, false);
+        Employee employee4 = new Employee("Born", "Wick", 55, false);
+        Employee[] employees = new Employee[]{employee1, employee2, employee3, employee4};
+
+        batchSaveAndFlush(employees);
+
+        ResponseEntity<EmployeeNamesResponse> response = restTemplate.getForEntity(
+                String.format(urlTemplate, port, "names"), EmployeeNamesResponse.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        EmployeeNamesResponse responseBody = response.getBody();
+        assertNotNull(responseBody);
+        assertEquals(EmployeeResponseMessage.DISTINCT_FIRST_NAMES_SUCCESS, responseBody.getMsg());
+
+        ArrayList<String> firstNames = responseBody.getNames();
+
+        assertNotNull(firstNames);
+        Collections.sort(firstNames);
+        assertEquals("Born", firstNames.get(0));
+        assertEquals("John", firstNames.get(1));
+    }
 
     @Test
     void getDistinctEmployeeFirstNames_throwDataAccessException_InternalServerError() throws InvalidEmployeeAgeException {
@@ -390,39 +390,42 @@ class EmployeeControllerTest {
      * There is no library method for PUT requests in TestRestTemplate, so need to use exchange method
      * which require us to specify http method and http request entity.
      */
-//    @Test
-//    void addEligibilityAfterAge_SetEligibilityToTrueAfterHalf_Ok() {
-//        int size = 50;
-//        Employee[] employees = new Employee[size];
-//        for (int i = 0; i < size; i++) {
-//            String name = i < size/2 ? "John" : "Born";
-//            employees[i] = new Employee(name, "Wick" + i, i, false);
-//        }
-//
-//        ResponseEntity<EmployeesResponse> batchSaveResponse = batchRegisterEmployee(employees);
-//
-//        assertEquals(HttpStatus.OK, batchSaveResponse.getStatusCode());
-//
-//        ResponseEntity<EligibilityAfterResponse> response = restTemplate.exchange(
-//                String.format(urlTemplate, port, "/addEligibilityAfter/" + (size/2 - 1)),
-//                HttpMethod.PUT,
-//                null,
-//                EligibilityAfterResponse.class
-//        );
-//
-//        assertEquals(HttpStatus.OK, response.getStatusCode());
-//
-//        EligibilityAfterResponse responseBody = response.getBody();
-//        assertNotNull(responseBody);
-//        assertEquals(EmployeeResponseMessage.SET_ELIGIBILITY_AFTER_SUCCESS, responseBody.getMsg());
-//        assertEquals(size/2 - 1, responseBody.getAfterAge());
-//        assertTrue(responseBody.getEligibilitySet());
-//
-//        CountEligibleResponse countEligibleResponse = restTemplate.getForObject(
-//                String.format(urlTemplate, port, "count/eligible"), CountEligibleResponse.class);
-//        assertNotNull(countEligibleResponse);
-//        assertEquals(size/2, countEligibleResponse.getCount());
-//    }
+    @Test
+    void addEligibilityAfterAge_SetEligibilityToTrueAfterHalf_Ok() {
+        int size = 50;
+        int mid = (int) (ceil(size / 2)) - 1;
+
+        Employee[] employees = new Employee[size];
+        for (int i = 0; i < size; i++) {
+            String name = i < size/2 ? "John" : "Born";
+            employees[i] = new Employee(name, "Wick" + i, i, false);
+        }
+
+        batchSaveAndFlush(employees);
+
+        ResponseEntity<EligibilityAfterResponse> response = restTemplate.exchange(
+                String.format(urlTemplate, port, "/addEligibilityAfter/" + mid),
+                HttpMethod.PUT,
+                null,
+                EligibilityAfterResponse.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        EligibilityAfterResponse responseBody = response.getBody();
+        assertNotNull(responseBody);
+        assertEquals(EmployeeResponseMessage.SET_ELIGIBILITY_AFTER_SUCCESS, responseBody.getMsg());
+        assertEquals(mid, responseBody.getAfterAge());
+        assertTrue(responseBody.getEligibilitySet());
+
+        // need to flush to commit results to db for testing purposes
+        repository.flush();
+
+        CountEligibleResponse countEligibleResponse = restTemplate.getForObject(
+                String.format(urlTemplate, port, "count/eligible"), CountEligibleResponse.class);
+        assertNotNull(countEligibleResponse);
+        assertEquals(size - (mid + 1), countEligibleResponse.getCount());
+    }
 
     /**
      * When mocking exception thrown by a method that returns void, a different syntax is required
@@ -458,39 +461,41 @@ class EmployeeControllerTest {
         assertEquals(0, countEligibleResponse.getCount());
     }
 
-//    @Test
-//    void batchAddEligibilityAfterAge_SetEligibilityToTrueAfterHalf_Ok() {
-//        int size = 50;
-//        Employee[] employees = new Employee[size];
-//        for (int i = 0; i < size; i++) {
-//            String name = i < size/2 ? "John" : "Born";
-//            employees[i] = new Employee(name, "Wick" + i, i, false);
-//        }
-//
-//        ResponseEntity<EmployeesResponse> batchSaveResponse = batchRegisterEmployee(employees);
-//
-//        assertEquals(HttpStatus.OK, batchSaveResponse.getStatusCode());
-//
-//        ResponseEntity<EligibilityAfterResponse> response = restTemplate.exchange(
-//                String.format(urlTemplate, port, "/batch/addEligibilityAfter/" + (size/2 - 1)),
-//                HttpMethod.PUT,
-//                null,
-//                EligibilityAfterResponse.class
-//        );
-//
-//        assertEquals(HttpStatus.OK, response.getStatusCode());
-//
-//        EligibilityAfterResponse responseBody = response.getBody();
-//        assertNotNull(responseBody);
-//        assertEquals(EmployeeResponseMessage.SET_ELIGIBILITY_AFTER_SUCCESS, responseBody.getMsg());
-//        assertEquals(size/2 - 1, responseBody.getAfterAge());
-//        assertTrue(responseBody.getEligibilitySet());
-//
-//        CountEligibleResponse countEligibleResponse = restTemplate.getForObject(
-//                String.format(urlTemplate, port, "count/eligible"), CountEligibleResponse.class);
-//        assertNotNull(countEligibleResponse);
-//        assertEquals(size/2, countEligibleResponse.getCount());
-//    }
+    @Test
+    void batchAddEligibilityAfterAge_SetEligibilityToTrueAfterHalf_Ok() {
+        int size = 50;
+        int mid = (int) (ceil(size / 2)) - 1;
+
+        Employee[] employees = new Employee[size];
+        for (int i = 0; i < size; i++) {
+            String name = i < size/2 ? "John" : "Born";
+            employees[i] = new Employee(name, "Wick" + i, i, false);
+        }
+
+        batchSaveAndFlush(employees);
+
+        ResponseEntity<EligibilityAfterResponse> response = restTemplate.exchange(
+                String.format(urlTemplate, port, "/batch/addEligibilityAfter/" + mid),
+                HttpMethod.PUT,
+                null,
+                EligibilityAfterResponse.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        EligibilityAfterResponse responseBody = response.getBody();
+        assertNotNull(responseBody);
+        assertEquals(EmployeeResponseMessage.SET_ELIGIBILITY_AFTER_SUCCESS, responseBody.getMsg());
+        assertEquals(mid, responseBody.getAfterAge());
+        assertTrue(responseBody.getEligibilitySet());
+
+        repository.flush();
+
+        CountEligibleResponse countEligibleResponse = restTemplate.getForObject(
+                String.format(urlTemplate, port, "count/eligible"), CountEligibleResponse.class);
+        assertNotNull(countEligibleResponse);
+        assertEquals(size - (mid + 1), countEligibleResponse.getCount());
+    }
 
     @Test
     void masterSlaveDB_employeesInsertedInMasterReplicatedInSlave_Ok() {
@@ -549,5 +554,30 @@ class EmployeeControllerTest {
 
         Optional<Employee> slaveEmployee = this.repository.findById(id);
         assertFalse(slaveEmployee.isPresent());
+    }
+
+    @Test
+    void testTransaction_employeeChangesRolledBack() {
+        Employee e = new Employee("John", "Wick", 55, false);
+
+        Employee e1 = repository.saveAndFlush(e);
+        Long e1Id = e1.getId();
+
+        try {
+            employeeService.testTransaction(e1);
+        } catch (IndexOutOfBoundsException ex) {
+            System.out.println("transaction failed halfway");
+        }
+
+
+        Optional<Employee> masterE = repository.findByIdInMaster(e1Id);
+        assertTrue(masterE.isPresent());
+        assertEquals("John", masterE.get().getFirstName());
+        assertEquals("Wick", masterE.get().getLastName());
+
+        Optional<Employee> slaveE = repository.findById(e1Id);
+        assertTrue(slaveE.isPresent());
+        assertEquals("John", slaveE.get().getFirstName());
+        assertEquals("Wick", slaveE.get().getLastName());
     }
 }

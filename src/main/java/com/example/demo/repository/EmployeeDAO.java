@@ -1,6 +1,5 @@
 package com.example.demo.repository;
 
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -8,17 +7,15 @@ import java.util.function.Function;
 
 import com.example.demo.model.Employee;
 
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.FluentQuery;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * EmployeeDAO implements both the master & slave repositories to decide which of these databases to use
@@ -26,6 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Repository
 public class EmployeeDAO implements EmployeeMasterRepository, EmployeeSlaveRepository {
+
+    @PersistenceUnit(name = "masterEntityManagerFactory")
+    private EntityManagerFactory masterEntityManagerFactory;
+
+    public EntityManagerFactory getMasterEntityManagerFactory() {
+        return masterEntityManagerFactory;
+    }
 
     private EmployeeMasterRepository masterRepository;
     private EmployeeSlaveRepository slaveRepository;
@@ -134,6 +138,10 @@ public class EmployeeDAO implements EmployeeMasterRepository, EmployeeSlaveRepos
         return slaveRepository.getReferenceById(aLong);
     }
 
+    public List<Employee> findAllInMaster() {
+        return masterRepository.findAll();
+    }
+
     @Override
     public <S extends Employee> Optional<S> findOne(Example<S> example) {
         return slaveRepository.findOne(example);
@@ -171,7 +179,7 @@ public class EmployeeDAO implements EmployeeMasterRepository, EmployeeSlaveRepos
 
     @Override
     public <S extends Employee> List<S> saveAll(Iterable<S> entities) {
-        return slaveRepository.saveAll(entities);
+        return masterRepository.saveAll(entities);
     }
 
     public Optional<Employee> findByIdInMaster(Long aLong) {

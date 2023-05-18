@@ -3,7 +3,6 @@ package com.example.demo.config;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -98,7 +97,7 @@ public class SlaveDataSourceConfig {
         return dataSource;
     }
 
-    @Bean
+    @Bean(name = "slaveEntityManagerFactory")
     public LocalContainerEntityManagerFactoryBean slaveEntityManagerFactory() {
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
         vendorAdapter.setGenerateDdl(false);

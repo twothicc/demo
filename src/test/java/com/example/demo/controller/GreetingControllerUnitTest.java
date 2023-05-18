@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * In this case, we can specify to have only the GreetingController instantiated.
  */
 @WebMvcTest(GreetingController.class)
-class GreetingControllerTest {
+class GreetingControllerUnitTest {
 
     private static final String url = "/greeting/get";
 
