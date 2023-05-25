@@ -15,7 +15,7 @@ IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Employees' and xtype='U')
 	)
 GO
 
-IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'ageIndex')
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'eligibilityAgeIndex')
     CREATE INDEX eligibilityAgeIndex ON Employees (eligibility, age ASC);
 GO
 
@@ -26,9 +26,9 @@ GO
 
 -- Checks if user demoUser already exists for demo database
 IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name='demoSlave1')
-	CREATE USER demoUser1 FOR LOGIN demoUser;
+	CREATE USER demoSlave1 FOR LOGIN demoSlave;
 GO
 
 -- Grant all READ and WRITE permissions to demoUser1
-EXEC sp_addrolemember N'db_datareader', N'demoUser1';
+EXEC sp_addrolemember N'db_datareader', N'demoSlave1';
 GO

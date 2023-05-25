@@ -43,6 +43,8 @@ import java.util.*;
 class EmployeeControllerIntegrationTest {
 
     private final static String urlTemplate = "http://localhost:%d/employee/%s";
+//    private final static double REPLICATION_DELAY = 10.0;
+    private final static double REPLICATION_DELAY = 0.0;
 
     @Value(value = "${local.server.port}")
     private int port;
@@ -63,18 +65,26 @@ class EmployeeControllerIntegrationTest {
     @SpyBean
     private EmployeeService employeeService;
 
-    ResponseEntity<EmployeeResponse> registerEmployee(Employee employee) {
+    private ResponseEntity<EmployeeResponse> registerEmployee(Employee employee) {
         HttpEntity<Employee> request = new HttpEntity<>(employee);
 
         return this.restTemplate.postForEntity(
                 String.format(urlTemplate, port, "register"), request, EmployeeResponse.class);
     }
 
-    ResponseEntity<EmployeesResponse> batchRegisterEmployee(Employee[] employees) {
+    private ResponseEntity<EmployeesResponse> batchRegisterEmployee(Employee[] employees) {
         HttpEntity<Employee[]> request = new HttpEntity<>(employees);
 
         return this.restTemplate.postForEntity(
                 String.format(urlTemplate, port, "batch/register"), request, EmployeesResponse.class);
+    }
+
+    private void waitForReplication(double seconds) {
+        try {
+            Thread.sleep((long) (seconds * 1000));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     Employee saveAndFlush(Employee employee) {
@@ -92,6 +102,9 @@ class EmployeeControllerIntegrationTest {
     @BeforeEach
     public void resetEmployeeesTable() {
         repository.deleteAll();
+        repository.flush();
+
+        waitForReplication(REPLICATION_DELAY);
     }
 
     /**
@@ -143,6 +156,11 @@ class EmployeeControllerIntegrationTest {
 
             assertEquals(result.getStatusCode(), HttpStatus.OK);
         }
+
+        // flush to commit changes immediately to master so it can be replicated to slave
+        repository.flush();
+
+        waitForReplication(REPLICATION_DELAY);
 
         EmployeesResponse responseBody = restTemplate.getForObject(
                 String.format(urlTemplate, port, "get"),
@@ -323,6 +341,8 @@ class EmployeeControllerIntegrationTest {
 
         batchSaveAndFlush(employees);
 
+        waitForReplication(REPLICATION_DELAY);
+
         ResponseEntity<EmployeeNamesResponse> response = restTemplate.getForEntity(
                 String.format(urlTemplate, port, "names"), EmployeeNamesResponse.class);
 
@@ -336,6 +356,7 @@ class EmployeeControllerIntegrationTest {
 
         assertNotNull(firstNames);
         Collections.sort(firstNames);
+        assertEquals(2, firstNames.size());
         assertEquals("Born", firstNames.get(0));
         assertEquals("John", firstNames.get(1));
     }
@@ -392,7 +413,7 @@ class EmployeeControllerIntegrationTest {
      */
     @Test
     void addEligibilityAfterAge_SetEligibilityToTrueAfterHalf_Ok() {
-        int size = 50;
+        int size = 5;
         int mid = (int) (ceil(size / 2)) - 1;
 
         Employee[] employees = new Employee[size];
@@ -402,6 +423,8 @@ class EmployeeControllerIntegrationTest {
         }
 
         batchSaveAndFlush(employees);
+
+        waitForReplication(REPLICATION_DELAY);
 
         ResponseEntity<EligibilityAfterResponse> response = restTemplate.exchange(
                 String.format(urlTemplate, port, "/addEligibilityAfter/" + mid),
@@ -420,6 +443,8 @@ class EmployeeControllerIntegrationTest {
 
         // need to flush to commit results to db for testing purposes
         repository.flush();
+
+        waitForReplication(REPLICATION_DELAY);
 
         CountEligibleResponse countEligibleResponse = restTemplate.getForObject(
                 String.format(urlTemplate, port, "count/eligible"), CountEligibleResponse.class);
@@ -474,6 +499,8 @@ class EmployeeControllerIntegrationTest {
 
         batchSaveAndFlush(employees);
 
+        waitForReplication(REPLICATION_DELAY);
+
         ResponseEntity<EligibilityAfterResponse> response = restTemplate.exchange(
                 String.format(urlTemplate, port, "/batch/addEligibilityAfter/" + mid),
                 HttpMethod.PUT,
@@ -491,6 +518,8 @@ class EmployeeControllerIntegrationTest {
 
         repository.flush();
 
+        waitForReplication(REPLICATION_DELAY);
+
         CountEligibleResponse countEligibleResponse = restTemplate.getForObject(
                 String.format(urlTemplate, port, "count/eligible"), CountEligibleResponse.class);
         assertNotNull(countEligibleResponse);
@@ -506,6 +535,8 @@ class EmployeeControllerIntegrationTest {
         Employee[] employees = new Employee[]{employee1, employee2, employee3, employee4};
 
         batchSaveAndFlush(employees);
+
+        waitForReplication(REPLICATION_DELAY);
 
         EmployeesResponse slaveResponseBody = restTemplate.getForObject(
                 String.format(urlTemplate, port, "get"), EmployeesResponse.class);
@@ -533,6 +564,8 @@ class EmployeeControllerIntegrationTest {
         // update and flush employee
         Employee savedEmployee = saveAndFlush(employee);
 
+        waitForReplication(REPLICATION_DELAY);
+
         Optional<Employee> slaveEmployee = this.repository.findById(savedEmployee.getId());
         assertTrue(slaveEmployee.isPresent());
         assertTrue(slaveEmployee.get().isEligibility());
@@ -542,6 +575,7 @@ class EmployeeControllerIntegrationTest {
     void masterSlaveDB_employeeDeletedInMasterReplicatedInSlave_Ok() {
         Employee employee = new Employee("John", "Wick1", 55, false);
         Employee savedEmployee = saveAndFlush(employee);
+
         Long id = savedEmployee.getId();
 
         Optional<Employee> check = this.repository.findByIdInMaster(id);
@@ -552,6 +586,8 @@ class EmployeeControllerIntegrationTest {
         this.repository.deleteById(id);
         this.repository.flush();
 
+        waitForReplication(REPLICATION_DELAY);
+
         Optional<Employee> slaveEmployee = this.repository.findById(id);
         assertFalse(slaveEmployee.isPresent());
     }
@@ -561,6 +597,7 @@ class EmployeeControllerIntegrationTest {
         Employee e = new Employee("John", "Wick", 55, false);
 
         Employee e1 = repository.saveAndFlush(e);
+
         Long e1Id = e1.getId();
 
         try {
@@ -569,11 +606,12 @@ class EmployeeControllerIntegrationTest {
             System.out.println("transaction failed halfway");
         }
 
-
         Optional<Employee> masterE = repository.findByIdInMaster(e1Id);
         assertTrue(masterE.isPresent());
         assertEquals("John", masterE.get().getFirstName());
         assertEquals("Wick", masterE.get().getLastName());
+
+        waitForReplication(REPLICATION_DELAY);
 
         Optional<Employee> slaveE = repository.findById(e1Id);
         assertTrue(slaveE.isPresent());

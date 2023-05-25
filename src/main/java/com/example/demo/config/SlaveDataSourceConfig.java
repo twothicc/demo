@@ -51,9 +51,9 @@ public class SlaveDataSourceConfig {
     private Boolean tomcatRemoveAbandonedConnections;
 
     @Autowired
-    public SlaveDataSourceConfig(@Value("${spring.datasource.url}") String url,
-                                  @Value("${spring.datasource.username}") String username,
-                                  @Value("${spring.datasource.password}") String password,
+    public SlaveDataSourceConfig(@Value("${spring.datasource.slave_url}") String url,
+                                  @Value("${spring.datasource.slave_username}") String username,
+                                  @Value("${spring.datasource.slave_password}") String password,
                                   @Value("${spring.datasource.driver-class-name}") String driverClassName,
                                   @Value("${spring.jpa.show-sql}") Boolean showSQL,
                                   @Value("${spring.jpa.properties.hibernate.format_sql}") Boolean formatSQL,

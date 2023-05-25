@@ -62,6 +62,9 @@ public class EmployeeService {
                 this.repository.findByEligibilityAndAgeAfterOrderByAgeAsc(false, age)
         );
 
+        System.out.println("yolo");
+        System.out.println(records);
+
         for (Employee curr : records) {
             this.repository.updateEmployeeEligibility(curr.getId(), true);
         }

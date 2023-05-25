@@ -1,9 +1,107 @@
+# About this demo
+This demonstration aims to show the capabilities and highlight some conveniences of using Spring Boot
+as a backend framework in 3 parts:
+- Employee API
+- Serialize Repository
+- Testing
+
 # Spring Boot
 Spring Boot is a java backend framework that makes developing backend services faster and easier
 
 The Application Context is often used as the Spring container and is used to manage Spring beans
 
 SpringBeans are objects that the Spring container instantiates, assembles, and manages
+
+# 1. Employee API
+The first part of this demonstration is a simple MVC (Model View Controller minus the V) implementation along
+with some database logic.
+
+You can follow the flow of this API from `EmployeeController` -> `EmployeeService` -> `EmployeeDAO` -> `EmployeeMasterRepository` /
+`EmployeeSlaveRepository`. While going through the code, you can look up the various annotations used with the
+ones listed below to get a better understanding of how they are used and why are they applied on certain classes/methods/fields
+
+### Multiple data sources
+
+A particularly interesting capability explored in this part is to configure multiple data sources in a single
+backend service. 
+
+Under the config package, you can see that there are 2 data source configs, along with 2 accompanying DB scripts
+`SETUP_MASTER_DB.sql` and `SETUP_SLAVE_DB.sql` in the scripts directory to help you setup up the DBs if you wish to.
+
+Both `MasterDataSourceConfig` and `SlaveDataSourceConfig` are annotated with `@Configuration` and both produce
+a bean of the same type `DataSource`. Without any special considerations made, this will actually be a source
+of ambiguity for the Spring Application Context. Imagine a scenario where the user requests a repository like for
+instance a `EmployeeRepository`. How will Spring Application Context know which `DataSource` to use to assemble
+the user's `EmployeeRepository`? Should it use the one created by `MasterDataSourceConfig` or perhaps `SlaveDataSourceConfig`?
+
+When multiple beans of the same type are used, we can tell Spring Application Context to **preferentially** inject
+a certain bean over the rest by using the `@Primary` annotation on the method returning the desired bean. In this
+case, we use it on `MasterDataSourceConfig::masterDataSource`, so whenever Spring Application Context returns
+a repository, it will use the `DataSource` bean from `MasterDataSourceConfig`.
+
+But then here is another problem. We sometimes want to use the `SlaveDataSourceConfig`'s `DataSource` to interact
+with the other DB. So how can we tell Spring Application Context to perform this conditional usage of beans?
+
+Here we have created the `@ReadOnlyRepository` annotation under the config package. Under the `@EnableJpaRepository`
+annotation used on `MasterDataSourceConfig`, we have set the `excludeFilter` property to exclude scanning for
+classes marked with the `@ReadOnlyRepository`. On the other hand, we have set the `includeFilter` property on the
+`@EnableJpaRepository` annotation used on `SlaveDataSourceConfig` to include scanning for classes marked with
+`@ReadOnlyRepository`.
+
+This achieves the effect whereby Spring Application Context omits scanning for classes marked with `@ReadOnlyRepository`
+when looking to inject the `DataSource` bean from `MasterDataSourceConfig`. It does the opposite instead for the
+`DataSource` bean from `SlaveDataSourceConfig`.
+
+This is exactly what we are looking for. We annotate the `EmployeeSlaveRepository` with the `@ReadOnlyRepository` to
+tell Spring Application Context that all calls made to it are to interact with the slave DB instead of the master DB.
+We then wrap the two repositories under the `EmployeeDAO` to implement logic on when to use which repository.
+
+**Note**: You may notice that in the `application.properties`, I set the exact same database url for both the master
+and slave db url property. This is because this guide does not show how to set up database replication on MSSQL, but
+do let me know if you want to learn how to.
+
+# 2. SerializeRepository
+The second part of this demonstration aims to show how we can utilize the `VARBINARY` or better known as
+BLOB in other DBs to store objects of various types in the same table via serialization and deserialization.
+
+So to show this, I've set up the `SerializeObj` entity. You can also use the `SETUP_SERIALIZATION_DB.sql` under
+the scripts directory to setup the exact same DB on your MSSQL server.
+
+In particular, I've set the `content` field of this entity to have the datatype `VARBINARY(max)` on the DB,
+essentially allowing it to store byte content of any size.
+
+The `SerializeObj` class comes with private methods to serialize and deserialize any objects to and from the content field
+, which are `SerializeObj::serializeContent` and `serializeContent::deserializeContent` respectively.
+
+We want to showcase that we can store two objects `SerializedObj` and `SerializedObj2` in the same table.
+This can be seen by running the test method `DemoApplicationTests::test`.
+
+Since the method to reset is annotated with `@BeforeEach`, you can even view the results of the test
+in the DB yourself, which should be 2 separate records with hexadecimals in their content field.
+
+### Possible Applications
+The main reason for this demonstration is to explore how we can possibly set up a config table that
+can support many sorts of config field requirements from various teams.
+
+Each team can even maintain a library containing number codes that map to their corresponding config
+classes so that other teams can import those libraries and deserialize the team's configs properly.
+
+# 3. Testing
+Having tests is good, but if your tests takes minutes to run, it would kinda suck. So this part just
+aims to show how we can design more performative tests.
+
+`@SpringBootTest` annotation both starts the web server and the full Spring Application Context, and should
+only be used for integration testing. An additional benefit is that all APIs will be available using this
+method. However, if the server eventually grows, it may take a very long time to
+start up the web server, so use it appropriately.
+
+`@WebMvcTest` annotation does not start the web server, and Spring Boot directly forwards http requests to
+a controller. Slightly more performative than `@SpringBootTest` but still should only be used for
+integration testing.
+
+For other unit tests, none of the above annotations should be used. If their results or thrown exceptions
+are necessary for testing, `@Mock` and `@InjectMocks` annotation should be used instead to utilize
+Mockito for mocking.
 
 # Spring Annotations
 Spring Boot uses annotations heavily as a form of metadata to provide info about a program

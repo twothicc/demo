@@ -53,9 +53,9 @@ public class MasterDataSourceConfig {
     private Boolean tomcatRemoveAbandonedConnections;
 
     @Autowired
-    public MasterDataSourceConfig(@Value("${spring.datasource.url}") String url,
-                                  @Value("${spring.datasource.username}") String username,
-                                  @Value("${spring.datasource.password}") String password,
+    public MasterDataSourceConfig(@Value("${spring.datasource.master_url}") String url,
+                                  @Value("${spring.datasource.master_username}") String username,
+                                  @Value("${spring.datasource.master_password}") String password,
                                   @Value("${spring.datasource.driver-class-name}") String driverClassName,
                                   @Value("${spring.jpa.show-sql}") Boolean showSQL,
                                   @Value("${spring.jpa.properties.hibernate.format_sql}") Boolean formatSQL,
