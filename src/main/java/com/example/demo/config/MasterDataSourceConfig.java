@@ -13,8 +13,10 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+import org.springframework.transaction.PlatformTransactionManager;
 
 /**
  * Follow https://medium.com/swlh/a-complete-guide-to-setting-up-multiple-datasources-in-spring-8296d4ff0935
@@ -27,7 +29,8 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 @EnableJpaRepositories(
         basePackages = "com.example.demo.repository",
         excludeFilters = @ComponentScan.Filter(ReadOnlyRepository.class),
-        entityManagerFactoryRef = "masterEntityManagerFactory"
+        entityManagerFactoryRef = "masterEntityManagerFactory",
+        transactionManagerRef = "masterTransactionManager"
 )
 public class MasterDataSourceConfig {
 
@@ -127,5 +130,19 @@ public class MasterDataSourceConfig {
         factoryBean.setJpaVendorAdapter(vendorAdapter);
         factoryBean.getJpaPropertyMap().putAll(properties);
         return factoryBean;
+    }
+
+    /**
+     * Setup and add TransactionManager bean to Spring Application Context.
+     *
+     * @return PlatformTransactionManager instance
+     */
+    @Primary
+    @Bean(name = "masterTransactionManager")
+    @SuppressWarnings("unused")
+    public PlatformTransactionManager masterTransactionManager() {
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(masterEntityManagerFactory().getObject());
+        return transactionManager;
     }
 }

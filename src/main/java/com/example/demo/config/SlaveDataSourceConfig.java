@@ -6,9 +6,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
@@ -25,7 +28,8 @@ import java.util.Map;
 @EnableJpaRepositories(
         basePackages = "com.example.demo.repository",
         includeFilters = @ComponentScan.Filter(ReadOnlyRepository.class),
-        entityManagerFactoryRef = "slaveEntityManagerFactory"
+        entityManagerFactoryRef = "slaveEntityManagerFactory",
+        transactionManagerRef = "slaveTransactionManager"
 )
 public class SlaveDataSourceConfig {
 
@@ -112,5 +116,18 @@ public class SlaveDataSourceConfig {
         factoryBean.setJpaVendorAdapter(vendorAdapter);
         factoryBean.getJpaPropertyMap().putAll(properties);
         return factoryBean;
+    }
+
+    /**
+     * Setup and add TransactionManager bean to Spring Application Context.
+     *
+     * @return PlatformTransactionManager instance
+     */
+    @Bean(name = "slaveTransactionManager")
+    @SuppressWarnings("unused")
+    public PlatformTransactionManager slaveTransactionManager() {
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(slaveEntityManagerFactory().getObject());
+        return transactionManager;
     }
 }

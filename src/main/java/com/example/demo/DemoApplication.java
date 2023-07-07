@@ -13,6 +13,7 @@ import org.springframework.context.annotation.ComponentScan;
  * any other annotations that is a sub-type of it. i.e. @Service, @Controller, @Repository.
  */
 @SpringBootApplication
+@ComponentScan(basePackages = {"com.example.demo", "sg.gov.cpf.gpg.commonlib"})
 public class DemoApplication {
 
 	public static void main(String[] args) {

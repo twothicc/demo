@@ -49,6 +49,18 @@
 			<groupId>org.apache.tomcat</groupId>
 			<artifactId>tomcat-jdbc</artifactId>
 		</dependency>
+
+		<dependency>
+			<groupId>sg.gov.cpf.gpg.commonlib</groupId>
+			<artifactId>eligibility-common</artifactId>
+			<version>0.0.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>sg.gov.cpf.gpg.commonlib</groupId>
+			<artifactId>transaction-common</artifactId>
+			<version>0.0.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>

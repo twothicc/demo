@@ -10,19 +10,38 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+import sg.gov.cpf.gpg.commonlib.dbengine.GPGDataSourceConfig;
+import sg.gov.cpf.gpg.commonlib.eligibilitycommon.exception.DuplicateEligibilityException;
+import sg.gov.cpf.gpg.commonlib.eligibilitycommon.model.Eligibility;
+import sg.gov.cpf.gpg.commonlib.eligibilitycommon.service.EligibilityService;
+import sg.gov.cpf.gpg.commonlib.transactioncommon.exception.DuplicateTransactionException;
+import sg.gov.cpf.gpg.commonlib.transactioncommon.model.Transaction;
+import sg.gov.cpf.gpg.commonlib.transactioncommon.service.TransactionService;
+
+@SpringBootTest(
+		properties = {
+				"gpg.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=GPG;encrypt=true;TrustServerCertificate=true",
+				"gpg.datasource.username=demoUser",
+				"gpg.datasource.password=demo_pass"
+		}
+)
 class DemoApplicationTests {
-
-
 
 	@Test
 	void contextLoads() {
 	}
+
+	@Autowired
+	private EligibilityService eligibilityService;
+
+	@Autowired
+	private TransactionService transactionService;
 
 	@Autowired
 	private SerializeRepository serializeRepository;
@@ -33,7 +52,25 @@ class DemoApplicationTests {
 	}
 
 	@Test
-	void test() {
+	void testEligibilityTransaction() throws DuplicateEligibilityException, DuplicateTransactionException {
+		Eligibility eligibility = new Eligibility(
+			"S9972421H", "AAA", new BigDecimal(100), "Y",
+			null, "N", null, null,
+				null, null, null, null,
+				null, "Y", "N", null
+		);
+		eligibilityService.insertEligibility(eligibility);
+
+		Transaction transaction = new Transaction(
+				"S9972421H", "AAA", (short) 2024, new BigDecimal(100), null, "AAA",
+				null, null, null, null, "AAA",
+				new BigDecimal(0)
+		);
+		transactionService.insertTransaction(transaction);
+	}
+
+	@Test
+	void testSerializeObj() {
 		// First we use SerializeObj and serialize SerializedObj
 		SerializedObj serializedObj = new SerializedObj(11, "test11");
 		SerializeObj serializeObj = new SerializeObj("test12", serializedObj);
